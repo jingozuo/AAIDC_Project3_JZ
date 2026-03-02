@@ -6,7 +6,7 @@ These tests verify that state produced by one agent is correctly consumed by the
 - Analysis → Eligibility HITL (via phase human_eligibility_check)
 - Eligibility HITL (approved) → Refund (via phase ready_for_refund)
 - Refund → Refund HITL (via phase human_refund_check and policy_details with refund)
-- Refund HITL (approved) → Log refund → Summary
+- Refund HITL (approved) → Logger → Summary
 
 We test state handoff by running agent nodes in sequence with merged state,
 and we test that graph routers choose the correct next node given each agent's output.
@@ -22,7 +22,7 @@ from codes.graph import (
 from codes.nodes import (
     make_analysis_agent_node,
     make_refund_agent_node,
-    make_log_refund_node,
+    make_logger_agent_node,
     make_hitl_node,
 )
 from codes.tools.cancellation_rules import DATE_FORMAT
@@ -101,7 +101,7 @@ class TestRouterAgentToAgent:
 
     def test_after_refund_hitl_approved_routes_to_log_refund(self):
         state = {"human_decision": "approved", "hitl_checkpoint": "refund", "phase": "ready_for_summary"}
-        assert route_after_human(state) == "log_refund"
+        assert route_after_human(state) == "logger"
 
 
 # ----- State handoff integration: one agent's output → next agent's input -----
@@ -166,7 +166,7 @@ class TestLogRefundReceivesRefundHitlOutput:
         policy["refund_amount"] = 250.50
         policy["refund_reason"] = "Refund amount calculated successfully."
         state_after_refund_hitl = {"policy_details": policy}
-        log_refund_node = make_log_refund_node()
+        log_refund_node = make_logger_agent_node()
         out = log_refund_node(state_after_refund_hitl)
         assert out == {}
         assert (tmp_path / "refund_log.csv").exists()
@@ -213,7 +213,7 @@ class TestMultiAgentChain:
         )
         analysis_node = make_analysis_agent_node()
         refund_node = make_refund_agent_node()
-        log_refund_node = make_log_refund_node()
+        log_refund_node = make_logger_agent_node()
         state = {
             "phase": "ready_for_analysis",
             "policy_details": _eligible_policy_details("POL02309"),

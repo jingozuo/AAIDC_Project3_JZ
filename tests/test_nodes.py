@@ -1,4 +1,4 @@
-"""Unit tests for agent node functions (analysis, refund, log_refund, hitl)."""
+"""Unit tests for agent node functions (analysis, refund, logger, hitl)."""
 from datetime import datetime, timedelta
 from unittest.mock import patch
 import pytest
@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage
 from codes.nodes import (
     make_analysis_agent_node,
     make_refund_agent_node,
-    make_log_refund_node,
+    make_logger_agent_node,
     make_hitl_node,
 )
 from codes.tools.cancellation_rules import DATE_FORMAT
@@ -77,7 +77,7 @@ class TestRefundNode:
 
 
 class TestLogRefundNode:
-    """Test make_log_refund_node with temp output dir."""
+    """Test make_logger_agent_node with temp output dir."""
 
     def test_log_refund_node_calls_logger_and_returns_empty_updates(self, tmp_path, monkeypatch):
         from codes.tools import refund_logger as refund_logger_module
@@ -87,7 +87,7 @@ class TestLogRefundNode:
             "REFUND_LOG_FILE_PATH",
             str(tmp_path / "refund_log.csv"),
         )
-        node = make_log_refund_node()
+        node = make_logger_agent_node()
         state = {
             "policy_details": {
                 "policy_number": "POL001",

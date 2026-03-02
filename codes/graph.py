@@ -6,7 +6,7 @@ routing. All routing is phase-based (state.phase). Checkpointer (MemorySaver) is
 required for interrupt/resume and update_state (human-in-the-loop).
 
 Node order: START → intake (self-loop) → analysis → eligibility_hitl → refund →
-refund_hitl → log_refund → summary → END. Routers: route_from_intake, route_from_analysis,
+refund_hitl → logger → summary → END. Routers: route_from_intake, route_from_analysis,
 route_from_refund, route_after_human (shared by both HITL nodes).
 """
 from typing import Any, Dict
@@ -64,10 +64,10 @@ def route_from_refund(state: InsuranceCancellationState) -> str:
 
 def route_after_human(state: InsuranceCancellationState) -> str:
     """
-    Shared router for both HITL nodes: after human decision, go to refund, log_refund, or end.
+    Shared router for both HITL nodes: after human decision, go to refund, logger, or end.
 
     If human_decision != "approved", returns "end". If approved: eligibility → "refund",
-    refund → "log_refund"; otherwise "end".
+    refund → "logger"; otherwise "end".
     """
     decision = state.get("human_decision")
     checkpoint = state.get("hitl_checkpoint")
@@ -79,7 +79,7 @@ def route_after_human(state: InsuranceCancellationState) -> str:
     if checkpoint == "eligibility":
         return "refund"
     if checkpoint == "refund":
-        return "log_refund"
+        return "logger"
 
     return "end"
     

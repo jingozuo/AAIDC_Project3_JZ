@@ -29,9 +29,9 @@ flowchart TD
     eligibility_hitl -->|"rejected"| END
     refund --> refund_hitl
     refund --> END
-    refund_hitl -->|"approved"| log_refund
+    refund_hitl -->|"approved"| logger
     refund_hitl -->|"rejected"| END
-    log_refund --> summary
+    logger --> summary
     summary --> END
 """
 

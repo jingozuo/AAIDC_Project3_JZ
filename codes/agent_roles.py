@@ -53,7 +53,7 @@ AGENT_ROLES: List[Dict[str, Any]] = [
     {
         "id": "refund_hitl",
         "name": "Refund HITL",
-        "responsibility": "Human approval checkpoint after refund calculation. Approve → log_refund; Reject → end.",
+        "responsibility": "Human approval checkpoint after refund calculation. Approve → logger; Reject → end.",
         "inputs": ["policy_details", "output", "human_decision", "hitl_checkpoint"],
         "outputs": ["phase"],
         "tools_used": [],

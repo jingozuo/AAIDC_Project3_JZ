@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 EXPECTED_NODE_SEQUENCE = [
     "intake", "analysis", "eligibility_hitl", "refund",
-    "refund_hitl", "log_refund", "summary",
+    "refund_hitl", "logger", "summary",
 ]
 
 ALLOWED_TOOLS_BY_NODE: Dict[str, List[str]] = {
@@ -25,7 +25,7 @@ ALLOWED_TOOLS_BY_NODE: Dict[str, List[str]] = {
     "eligibility_hitl": [],
     "refund": ["cancellation_rules", "refund_calculator"],
     "refund_hitl": [],
-    "log_refund": ["refund_logger"],
+    "logger": ["refund_logger"],
     "summary": ["notice_generator"],
 }
 
@@ -151,7 +151,7 @@ def build_sequencing_test(sample: Dict[str, Any], LLMTestCaseCls) -> Any:
     expected_str = " -> ".join(EXPECTED_NODE_SEQUENCE)
     context = (
         f"Expected order (main path): {expected_str}. "
-        "Intake may repeat. Check: intake then analysis then eligibility_hitl then refund then refund_hitl then log_refund then summary."
+        "Intake may repeat. Check: intake then analysis then eligibility_hitl then refund then refund_hitl then logger then summary."
     )
     return LLMTestCaseCls(
         input="Evaluate workflow sequencing.",
@@ -230,7 +230,7 @@ def run_evaluation(
         )),
         ("workflow_sequencing", GEvalCls(
             name="WorkflowSequencing",
-            criteria="Does the actual_output node sequence follow: intake, analysis, eligibility_hitl, refund, refund_hitl, log_refund, summary? Allow intake to repeat. Return 1 if correct, 0 if not.",
+            criteria="Does the actual_output node sequence follow: intake, analysis, eligibility_hitl, refund, refund_hitl, logger, summary? Allow intake to repeat. Return 1 if correct, 0 if not.",
             evaluation_params=[LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.CONTEXT],
             threshold=0.5, strict_mode=True, model=eval_model,
         )),

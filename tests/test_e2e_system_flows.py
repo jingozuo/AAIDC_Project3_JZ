@@ -2,7 +2,7 @@
 End-to-end system tests for complete workflow flows.
 
 Runs the full insurance cancellation graph (intake → analysis → HITL → refund → HITL →
-log_refund → summary) with mocked user input, HITL decisions, and LLM. Verifies that
+logger → summary) with mocked user input, HITL decisions, and LLM. Verifies that
 the entire flow completes and produces expected outputs (refund log, PDF notice).
 
 Run with: pytest tests/test_e2e_system_flows.py -v -s
