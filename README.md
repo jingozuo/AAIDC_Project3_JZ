@@ -170,6 +170,12 @@ Each graph node and each tool has a single, documented responsibility (see `code
 
 `paths.py` is the single source for filesystem paths and documents which components use which paths. `refund_calculator.py` defines the input/output contract for refund computation so refund logic stays in one place.
 
+## Health checks and troubleshooting
+
+- **Health checks**: Run `python codes/main.py --health` (or `-H`) to verify config files, data file, and output/logs directories. LLM connectivity is skipped by default; see `codes.health.run_health_checks(skip_llm=False)` for an optional LLM ping.
+- **Timeouts**: In `config/config.yaml` you can set `request_timeout` (seconds) for LLM HTTP requests to avoid indefinite hangs. Retry logic supports an optional `timeout_seconds` per call (see `codes/retry_logging.py`). Graph execution uses `recursion_limit` (default 50) in the invoke config.
+- **Troubleshooting**: See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common errors, log locations, and how to debug config, data, LLM, and workflow issues.
+
 ## Performance and evaluation
 
 Evaluation uses **DeepEval** only, with test cases for five dimensions (see `codes/evaluation/deepeval_eval.py`):

@@ -221,8 +221,22 @@ def make_analysis_agent_node() -> Callable[[InsuranceCancellationState], Dict[st
             output = "Policy not found. Please try again."
             print(f"✅ {output}")
             return {"phase": "end", "messages": [HumanMessage(content=output)], "output": output}
-        
-        is_eligible, reason = check_cancellation_eligibility(policy_details)
+
+        try:
+            is_eligible, reason = check_cancellation_eligibility(policy_details)
+        except Exception as e:
+            log_compliance(
+                "error_handling",
+                "analysis",
+                "Eligibility check failed",
+                validated=False,
+                error=str(e),
+                metadata={"policy_number": policy_details.get("policy_number", "")},
+            )
+            output = "An error occurred while checking eligibility. Please try again later."
+            print(f"✅ {output}")
+            return {"phase": "end", "messages": [HumanMessage(content=output)], "output": output}
+
         if not is_eligible:
             output = (
                 f"Policy is not eligible for cancellation. "
@@ -231,7 +245,7 @@ def make_analysis_agent_node() -> Callable[[InsuranceCancellationState], Dict[st
             )
             print(f"✅ {output}")
             return {"phase": "end", "messages": [HumanMessage(content=output)], "output": output}
-        
+
         output = (
             f"Policy is eligible for cancellation. "
             f"Reason: {reason}.\n"
@@ -258,7 +272,21 @@ def make_refund_agent_node() -> Callable[[InsuranceCancellationState], Dict[str,
         messages = state.get("messages", [])
         output = state.get("output", "")
 
-        is_eligible, reason = check_cancellation_eligibility(policy_details)
+        try:
+            is_eligible, reason = check_cancellation_eligibility(policy_details)
+        except Exception as e:
+            log_compliance(
+                "error_handling",
+                "refund",
+                "Eligibility check failed",
+                validated=False,
+                error=str(e),
+                metadata={"policy_number": policy_details.get("policy_number", "")},
+            )
+            output = "An error occurred while checking eligibility. Please try again later."
+            print(f"✅ {output}")
+            return {"phase": "end", "messages": [HumanMessage(content=output)], "output": output}
+
         if not is_eligible:
             output = (
                 f"Policy is not eligible for cancellation. "
@@ -268,7 +296,21 @@ def make_refund_agent_node() -> Callable[[InsuranceCancellationState], Dict[str,
             print(f"✅ {output}")
             return {"phase": "end", "messages": [HumanMessage(content=output)], "output": output}
 
-        is_refund_eligible, refund_reason, refund_amount = calculate_refund_amount(policy_details)
+        try:
+            is_refund_eligible, refund_reason, refund_amount = calculate_refund_amount(policy_details)
+        except Exception as e:
+            log_compliance(
+                "error_handling",
+                "refund",
+                "Refund calculation failed",
+                validated=False,
+                error=str(e),
+                metadata={"policy_number": policy_details.get("policy_number", "")},
+            )
+            output = "An error occurred while calculating refund. Please try again later."
+            print(f"✅ {output}")
+            return {"phase": "end", "messages": [HumanMessage(content=output)], "output": output}
+
         if not is_refund_eligible:
             output = (
                 f"Failed to calculate refund amount. "
@@ -301,15 +343,25 @@ def make_logger_agent_node() -> Callable[[InsuranceCancellationState], Dict[str,
         policy_details = state.get("policy_details", {})
         refund_amount = policy_details.get("refund_amount", 0.0)
         refund_reason = policy_details.get("refund_reason", "")
-        call_with_retry(
-            log_refund_record,
-            policy_details,
-            refund_amount,
-            refund_reason,
-            name="refund_logger",
-            stage="logger",
-            log_args_preview=policy_details.get("policy_number", ""),
-        )
+        try:
+            call_with_retry(
+                log_refund_record,
+                policy_details,
+                refund_amount,
+                refund_reason,
+                name="refund_logger",
+                stage="logger",
+                log_args_preview=policy_details.get("policy_number", ""),
+            )
+        except Exception as e:
+            log_compliance(
+                "error_handling",
+                "logger",
+                "Refund log failed after retries; workflow continues without log",
+                validated=False,
+                error=str(e),
+                metadata={"policy_number": policy_details.get("policy_number", ""), "operation": "refund_logger"},
+            )
         return {}
 
     return logger_node

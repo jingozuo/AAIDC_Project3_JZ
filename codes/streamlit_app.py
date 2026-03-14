@@ -16,7 +16,7 @@ if getattr(sys, "frozen", False) is False:
         sys.path.insert(0, _root)
 
 import streamlit as st
-from codes.utils import load_config
+from codes.utils import load_config, ConfigError
 from codes.paths import CONFIG_FILE_PATH, PROMPT_CONFIG_FILE_PATH, OUTPUTS_DIR
 from codes.llm import get_llm
 from codes.state import InsuranceCancellationState
@@ -26,9 +26,25 @@ from codes.output_graph import save_graph_visualization
 
 def _ensure_session():
     if "graph" not in st.session_state:
-        config = load_config(CONFIG_FILE_PATH)
-        prompt_config = load_config(PROMPT_CONFIG_FILE_PATH)
-        llm = get_llm(config["llm_model"], 0.3)
+        if "init_error" in st.session_state:
+            return  # Already failed; show error in UI
+        try:
+            config = load_config(CONFIG_FILE_PATH)
+            prompt_config = load_config(PROMPT_CONFIG_FILE_PATH)
+        except ConfigError as e:
+            st.session_state.init_error = f"Configuration error: {e}"
+            return
+        except Exception as e:
+            st.session_state.init_error = f"Failed to load config: {e}"
+            return
+        try:
+            request_timeout = config.get("request_timeout")
+            if request_timeout is not None:
+                request_timeout = float(request_timeout)
+            llm = get_llm(config["llm_model"], 0.3, request_timeout=request_timeout)
+        except Exception as e:
+            st.session_state.init_error = f"Failed to initialize LLM: {e}"
+            return
         st.session_state.graph = build_insurance_cancellation_graph(llm, prompt_config)
         st.session_state.config = {"configurable": {"thread_id": "streamlit-1"}, "recursion_limit": 50}
         st.session_state.messages = []
@@ -67,6 +83,10 @@ def main():
     st.caption("Multi-agent workflow: policy lookup → eligibility → refund → notice")
 
     _ensure_session()
+    if st.session_state.get("init_error"):
+        st.error(st.session_state.init_error)
+        st.info("Check that config/config.yaml and config/prompt_config.yaml exist and are valid. For LLM errors, check API keys.")
+        return
 
     if st.sidebar.button("🔄 New session"):
         for k in list(st.session_state.keys()):

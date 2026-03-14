@@ -1,4 +1,6 @@
 """Unit tests for retry_logging: call_with_retry and compliance log events."""
+import threading
+import time
 import pytest
 
 from codes.retry_logging import (
@@ -96,3 +98,23 @@ class TestCallWithRetryConfig:
         result = call_with_retry(fail_twice, name="x", stage="y", max_attempts=5)
         assert result == 1
         assert count == 3
+
+
+class TestCallWithRetryTimeout:
+    """call_with_retry with timeout_seconds raises TimeoutError when fn exceeds timeout."""
+
+    def test_timeout_raises_after_expiry(self, monkeypatch):
+        monkeypatch.setattr("codes.retry_logging.time.sleep", lambda _: None)
+        # Block until an event so the executor hits timeout (event never set)
+        block = threading.Event()
+
+        def slow():
+            block.wait()  # blocks until set; never set so timeout triggers
+            return 1
+
+        with pytest.raises(TimeoutError, match="timed out"):
+            call_with_retry(slow, name="slow", stage="test", timeout_seconds=0.1, max_attempts=2)
+
+    def test_no_timeout_succeeds_without_time_limit(self):
+        result = call_with_retry(lambda: 99, name="fast", stage="test", timeout_seconds=None)
+        assert result == 99
